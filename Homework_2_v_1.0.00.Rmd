@@ -7,5 +7,19 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(pacman); p_load(tidyverse,resampledata,knitr)
 ```
 
+### **5.8: Consider a population that has a normal distribution with mean $\mu$ = 36, standard deviation $\sigma$ = 8.**
+
+**a) The sampling distribution of X for samples of size 200 will have what mean, standard error, and shape?**
+
+answer: The sampling distribution will be a normal distribution with the center around the mean value of 36 and the standard error of $\sigma/sqrt(n)$ i.e 8/sqrt(200) = `r 8/sqrt(200)`
+
+**b) Use R to draw a random sample of size 200 from this population. Conduct EDA on your sample.**
+
+**c) Compute the bootstrap distribution for your sample, and note the bootstrap mean and standard error.**
+
+**d) Compare the bootstrap distribution to the theoretical sampling distribution by creating a table like Table 5.2.**
+
+**e) Repeat for sample sizes of n=50 and n=10.Carefully describe your observations about the effects of sample size on the bootstrap distri- bution.**
