@@ -1,0 +1,11 @@
+---
+title: "Stat_641_Homework_2"
+author: "Vikas_Reddy_Bodireddy"
+date: "2024-02-21"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
