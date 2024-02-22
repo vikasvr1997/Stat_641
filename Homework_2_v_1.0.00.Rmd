@@ -6,20 +6,109 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(pacman); p_load(tidyverse,resampledata,knitr)
 ```
 
-### **5.8: Consider a population that has a normal distribution with mean $\mu$ = 36, standard deviation $\sigma$ = 8.**
+### **5.8: Consider a population that has a normal distribution with mean** $\mu$ = 36, standard deviation $\sigma$ = 8.
 
 **a) The sampling distribution of X for samples of size 200 will have what mean, standard error, and shape?**
 
-answer: The sampling distribution will be a normal distribution with the center around the mean value of 36 and the standard error of $\sigma/sqrt(n)$ i.e 8/sqrt(200) = `r 8/sqrt(200)`
+answer: The sampling distribution will be a normal distribution with the center around the mean value of 36 and the standard error of $\sigma/sqrt(n)$ i.e 8/sqrt(200) = `r 8/sqrt(200)` .
 
 **b) Use R to draw a random sample of size 200 from this population. Conduct EDA on your sample.**
 
+```{r}
+set.seed(243)
+r_sample <- rnorm(200, mean = 36, sd = 8)
+
+summary(r_sample)
+hist(r_sample, freq = F, main = "sample size n = 200", xlim = c(4,70))
+cat("The stadard deviation for the random sample created is ",sd(r_sample))
+```
+
 **c) Compute the bootstrap distribution for your sample, and note the bootstrap mean and standard error.**
+
+```{r}
+set.seed(243)
+b_result <- array()
+for(i in 1:2000){
+  r_new <- sample(r_sample, size = 200, replace = T)
+  b_result[i] <- mean(r_new)
+}
+hist(b_result, bins = 40,freq = F, main = "Boot starp distribution ", col = 'lightblue')
+abline(v = mean(r_sample), lty = 2,col = "blue")
+cat('The standard error for bootstrap sample is',sd(b_result))
+
+```
 
 **d) Compare the bootstrap distribution to the theoretical sampling distribution by creating a table like Table 5.2.**
 
-**e) Repeat for sample sizes of n=50 and n=10.Carefully describe your observations about the effects of sample size on the bootstrap distri- bution.**
+```{r}
+r_names <- c("Population","sample","sampling distribution of x","bootstrap sample distribution")
+Mean <- c(36, mean(r_sample), 36,mean(b_result))
+standard_deviation <- c(8,sd(r_sample), 8/sqrt(200),sd(b_result)) 
+df <- data.frame(r_names,Mean,standard_deviation)
+kable(df, digits = 2)
+```
+
+From above table we can see clearly that the sample mean and bootstrap sample mean are both nearly same and also the standard error for sampling distribution and bootstrap sampling distribution is also similar.
+
+**e) Repeat for sample sizes of n=50 and n=10.Carefully describe your observations about the effects of sample size on the bootstrap distribution.**
+
+```{r}
+set.seed(143)
+
+r_samplesizes <- function(n, mean = 36, sd = 8){
+  r_sample <- rnorm(n, mean = 36, sd = 8)
+  summary(r_sample)
+  
+  par(mfrow = c(2, 2))
+  curve(dnorm(x,36,8),from = 10, to=65, main="N(36,8ˆ2)")
+  curve(dnorm(x,36,(8^2)/n),from = 10, to=65, main="Sampling dist")
+  abline(v=36,lty=2)
+  hist(r_sample, freq = F, main = paste("Sample size n =", n), xlim = c(10,65))
+  cat("The standard deviation for the random sample created is ", sd(r_sample), "\n")
+  
+  b_result <- numeric(2000)
+  
+  for(i in 1:2000){
+    r_new <- sample(r_sample, size = n, replace = TRUE)
+    b_result[i] <- mean(r_new)
+  }
+  
+  hist(b_result, bins = 40, freq = F, main = paste("Bootstrap distribution for n =", n), col = 'lightblue',xlim = c(10,65))
+  abline(v = mean(r_sample), lty = 2, col = "blue")
+  cat('The standard error for bootstrap sample is', sd(b_result), "\n")
+  
+  r_names <- c("Population", "Sample", "Sampling Distribution of x", "Bootstrap Sample Distribution")
+  Mean <- c(36, mean(r_sample), 36, mean(b_result))
+  standard_deviation <- c(8, sd(r_sample), 8 / sqrt(n), sd(b_result))
+
+  col_names <- c("Variable", paste("Mean for n =", n), paste("SD for n =", n))
+  
+  df <- data.frame(r_names, Mean, standard_deviation)
+  colnames(df) <- col_names
+  
+  kable(df, digits = 2)
+}
+
+# Call the function for sample sizes of 50 and 10
+r_samplesizes(50)
+r_samplesizes(10)
+
+
+
+```
+
+As the sample size decreases from 200 to 50 and further to 10, we observe that the sampling distribution becomes progressively less normal in shape, indicating increased variability in the estimates.
+However, after bootstrapping the samples, we notice a remarkable shift towards a more normal distribution, suggesting that the bootstrap method effectively mitigates the effects of small sample sizes on the sampling distribution.
+
+Examining the summary statistics, we find that for a sample size of 50, the sample mean is 37.85 and the bootstrap sample mean is 37.82, showing a close correspondence between the estimated statistics.
+Similarly, for a sample size of 10, the sample mean is 36.34 and the bootstrap sample mean is 36.44, indicating accurate estimation despite the small sample size.
+
+However, it's crucial to note that as the sample size decreases, the standard error values increase substantially.
+For instance, for a sample size of 50, the standard error for the sampling distribution is 1.13, while for the bootstrap sampling distribution, it's 1.21.
+Similarly, for a sample size of 10, the standard error for the sampling distribution is 2.53, and for the bootstrap sampling distribution, it's 2.71.
+
+This trend underscores the notion that as the sample size diminishes, the uncertainty in estimating population parameters magnifies, as evidenced by the augmented standard errors in the sampling and bootstrap distributions.
