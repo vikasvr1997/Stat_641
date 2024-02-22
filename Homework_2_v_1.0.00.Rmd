@@ -21,8 +21,8 @@ answer: The sampling distribution will be a normal distribution with the center 
 ```{r}
 set.seed(243)
 r_sample <- rnorm(200, mean = 36, sd = 8)
-
 summary(r_sample)
+
 hist(r_sample, freq = F, main = "sample size n = 200", xlim = c(4,70))
 cat("The stadard deviation for the random sample created is ",sd(r_sample))
 ```
@@ -112,3 +112,17 @@ For instance, for a sample size of 50, the standard error for the sampling distr
 Similarly, for a sample size of 10, the standard error for the sampling distribution is 2.53, and for the bootstrap sampling distribution, it's 2.71.
 
 This trend underscores the notion that as the sample size diminishes, the uncertainty in estimating population parameters magnifies, as evidenced by the augmented standard errors in the sampling and bootstrap distributions.
+
+**Is there a difference in the price of groceries sold by the two retailers Target and Walmart? The data set Groceries contain, a sample of grocery items and their prices advertised on their respective websites on one specific day.**
+
+**a) Compute summary statistics of the prices for each store.**
+
+```{r}
+data()
+```
+
+**b) Use the bootstrap to determine whether or not there is a difference in the mean prices.**
+
+**c) Create a histogram of the difference in prices.What is unusual about Quaker Oats Life cereal?**
+
+**d) Recompute the bootstrap percentile interval without this observation. What do you conclude?**
