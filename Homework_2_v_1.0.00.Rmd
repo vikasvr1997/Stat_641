@@ -36,7 +36,8 @@ for(i in 1:2000){
   r_new <- sample(r_sample, size = 200, replace = T)
   b_result[i] <- mean(r_new)
 }
-hist(b_result, bins = 40,freq = F, main = "Boot starp distribution ", col = 'lightblue')
+hist(b_result, bins = 40,freq = F, main = "Boot starp distribution ", 
+     col = 'lightblue')
 abline(v = mean(r_sample), lty = 2,col = "blue")
 cat('The standard error for bootstrap sample is',sd(b_result))
 
@@ -45,7 +46,8 @@ cat('The standard error for bootstrap sample is',sd(b_result))
 **d) Compare the bootstrap distribution to the theoretical sampling distribution by creating a table like Table 5.2.**
 
 ```{r}
-r_names <- c("Population","sample","sampling distribution of x","bootstrap sample distribution")
+r_names <- c("Population","sample","sampling distribution of x",
+             "bootstrap sample distribution")
 Mean <- c(36, mean(r_sample), 36,mean(b_result))
 standard_deviation <- c(8,sd(r_sample), 8/sqrt(200),sd(b_result)) 
 df <- data.frame(r_names,Mean,standard_deviation)
@@ -68,7 +70,8 @@ r_samplesizes <- function(n, mean = 36, sd = 8){
   curve(dnorm(x,36,(8^2)/n),from = 10, to=65, main="Sampling dist")
   abline(v=36,lty=2)
   hist(r_sample, freq = F, main = paste("Sample size n =", n), xlim = c(10,65))
-  cat("The standard deviation for the random sample created is ", sd(r_sample), "\n")
+  cat("The standard deviation for the random sample created is ", sd(r_sample), 
+      "\n")
   
   b_result <- numeric(2000)
   
@@ -77,11 +80,14 @@ r_samplesizes <- function(n, mean = 36, sd = 8){
     b_result[i] <- mean(r_new)
   }
   
-  hist(b_result, bins = 40, freq = F, main = paste("Bootstrap distribution for n =", n), col = 'lightblue',xlim = c(10,65))
+  hist(b_result, bins = 40, freq = F, 
+       main = paste("Bootstrap distribution for n =", n), 
+       col = 'lightblue',xlim = c(10,65))
   abline(v = mean(r_sample), lty = 2, col = "blue")
   cat('The standard error for bootstrap sample is', sd(b_result), "\n")
   
-  r_names <- c("Population", "Sample", "Sampling Distribution of x", "Bootstrap Sample Distribution")
+  r_names <- c("Population", "Sample", "Sampling Distribution of x", 
+               "Bootstrap Sample Distribution")
   Mean <- c(36, mean(r_sample), 36, mean(b_result))
   standard_deviation <- c(8, sd(r_sample), 8 / sqrt(n), sd(b_result))
 
@@ -92,13 +98,16 @@ r_samplesizes <- function(n, mean = 36, sd = 8){
   
   kable(df, digits = 2)
 }
+```
 
-# Call the function for sample sizes of 50 and 10
+```{r}
+# For Sample size = 50
 r_samplesizes(50)
+```
+
+```{r}
+# For Sample size = 10
 r_samplesizes(10)
-
-
-
 ```
 
 As the sample size decreases from 200 to 50 and further to 10, we observe that the sampling distribution becomes progressively less normal in shape, indicating increased variability in the estimates.
@@ -113,16 +122,88 @@ Similarly, for a sample size of 10, the standard error for the sampling distribu
 
 This trend underscores the notion that as the sample size diminishes, the uncertainty in estimating population parameters magnifies, as evidenced by the augmented standard errors in the sampling and bootstrap distributions.
 
-**Is there a difference in the price of groceries sold by the two retailers Target and Walmart? The data set Groceries contain, a sample of grocery items and their prices advertised on their respective websites on one specific day.**
+**5.18: Is there a difference in the price of groceries sold by the two retailers Target and Walmart? The data set Groceries contain, a sample of grocery items and their prices advertised on their respective websites on one specific day.**
 
 **a) Compute summary statistics of the prices for each store.**
 
 ```{r}
-data()
+data("Groceries")
+Groceries <- Groceries|>
+  select(Product,Target,Walmart)|>
+  na.omit()
+
+cat("The summary statistics for Target store are",summary(Groceries$Target))
+cat("The summary statistics for Walmart store are",summary(Groceries$Walmart))
 ```
 
 **b) Use the bootstrap to determine whether or not there is a difference in the mean prices.**
 
+```{r}
+set.seed(123)
+walmart <- Groceries$Walmart
+target <- Groceries$Target
+diff <- target - walmart
+mean(diff)
+result_2 <- array()
+for(i in 1:2000){
+  n_diff <- sample(diff, size = length(diff), replace = T)
+  result_2[i] <- mean(n_diff)
+}
+hist(result_2, main = "The bootstraping sampling distribution of the mean of differences ")
+
+cat("95% Confidence interval rane is ", quantile(result_2,probs = c(0.025,0.975)),"\n")
+```
+
+Answer:
+
+Null Hypothesis($H_0$) : $\mu_1 = \mu_2$ No mean Differnece among the Groups Alt Hypothesis($H_0$) : $\mu_1 \neq \mu_2$ there is mean Differnece among the Groups
+
+Based on the provided confidence interval, which spans from -0.1996667 to 0.2596833, we fail to reject the null hypothesis.
+This suggests that there is no significant difference between the means of prices in the two stores.
+The presence of the value 0 within the confidence interval implies that the mean could potentially fall anywhere within that range, indicating a two-sided hypothesis.
+
 **c) Create a histogram of the difference in prices.What is unusual about Quaker Oats Life cereal?**
 
+```{r}
+hist(diff,main = "histogram of the difference in prices")
+
+Quacker_cereal <- Groceries$Target[Groceries$Product == 
+                                     "Quaker Oats Life Cereal  Original "] -
+  Groceries$Walmart[Groceries$Product == "Quaker Oats Life Cereal  Original "]
+Quacker_cereal
+```
+
+Answer: If Quaker Oats cereal consistently maintains a price of \$6.01 at Walmart, significantly higher than its \$3.19 price at Target, and this trend persists across multiple iterations, it could substantially skew the mean of the bootstrap distribution.
+This is because the difference of -\$2.82 would be repeatedly included in each iteration as we allow for repetition.
+Consequently, the distribution would deviate significantly from accurately representing the population due to the uncertain and disproportionately large price difference observed in the dataset.
+
 **d) Recompute the bootstrap percentile interval without this observation. What do you conclude?**
+
+```{r}
+set.seed(123)
+walmart_2 <- Groceries|> 
+  filter(Product != "Quaker Oats Life Cereal  Original ")|>
+  pull(Walmart)
+target_2 <- Groceries|>
+  filter(Product != "Quaker Oats Life Cereal  Original ")|>
+  pull(Target)
+
+diff_2 <- target_2 - walmart_2
+mean(diff_2)
+result_3 <- array()
+for(i in 1:2000){
+  n_diff <- sample(diff_2, size = length(diff_2), replace = T)
+  result_3[i] <- mean(n_diff)
+}
+hist(result_3, main = "The bootstraping sampling distribution of the mean of differences ")
+
+cat("95% Confidence interval rane is ", quantile(result_3,probs = c(0.025,0.975)),"\n")
+```
+
+Answer:After excluding the row corresponding to "Quaker Oats Life Cereal Original," we observe a significant reduction in the uncertainty surrounding the mean difference.
+This reduction occurs because, throughout the 2000 replications, the problematic value of -2.82 is no longer present to skew the distribution.
+Consequently, the new bootstrap sample exhibits a near-normal distribution.
+
+Following the removal of this specific row, the confidence interval obtained is (0.02689655, 0.3059138), which notably does not contain 0 within its range.
+This indicates that we can confidently assert that the mean difference lies between 0.02 and 0.30.
+Furthermore, as the confidence interval does not include 0, we reject the Null hypothesis , and go in favor of the Alternate hypothesis ($\mu_1 - \mu_2 > 0$), asserting that there is indeed a mean difference between the two stores, with Target charging more on average compared to Walmart.
