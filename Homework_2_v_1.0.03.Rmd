@@ -7,7 +7,7 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
-library(pacman); p_load(tidyverse,resampledata,knitr)
+library(pacman); p_load(tidyverse,resampledata,knitr, boot)
 ```
 
 ### **5.8: Consider a population that has a normal distribution with mean** $\mu$ = 36, standard deviation $\sigma$ = 8.
@@ -132,8 +132,13 @@ Groceries <- Groceries|>
   select(Product,Target,Walmart)|>
   na.omit()
 
-cat("The summary statistics for Target store are",summary(Groceries$Target))
-cat("The summary statistics for Walmart store are",summary(Groceries$Walmart))
+summary(Groceries$Target)
+summary(Groceries$Walmart)
+
+ggplot(data = Groceries, aes(x = Target,y = Walmart))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  labs(main = "Scatter plot of target vs Walmart")
 ```
 
 **b) Use the bootstrap to determine whether or not there is a difference in the mean prices.**
@@ -142,6 +147,7 @@ cat("The summary statistics for Walmart store are",summary(Groceries$Walmart))
 set.seed(123)
 walmart <- Groceries$Walmart
 target <- Groceries$Target
+
 diff <- target - walmart
 mean(diff)
 result_2 <- array()
@@ -156,11 +162,13 @@ cat("95% Confidence interval rane is ", quantile(result_2,probs = c(0.025,0.975)
 
 Answer:
 
-Null Hypothesis($H_0$) : $\mu_1 = \mu_2$ No mean Differnece among the Groups Alt Hypothesis($H_0$) : $\mu_1 \neq \mu_2$ there is mean Differnece among the Groups
+Null Hypothesis($H_0$) : $\mu_1 = \mu_2$ No mean Difference among the Groups Alt Hypothesis($H_0$) : $\mu_1 \neq \mu_2$ there is mean Difference among the Groups
 
 Based on the provided confidence interval, which spans from -0.1996667 to 0.2596833, we fail to reject the null hypothesis.
 This suggests that there is no significant difference between the means of prices in the two stores.
 The presence of the value 0 within the confidence interval implies that the mean could potentially fall anywhere within that range, indicating a two-sided hypothesis.
+
+Also we can see from the scatter plot that these two observations are of matched pairs, as the products the products that are being compared are same for each store.
 
 **c) Create a histogram of the difference in prices.What is unusual about Quaker Oats Life cereal?**
 
@@ -213,35 +221,90 @@ Furthermore, as the confidence interval does not include 0, we reject the Null h
 a)  **Perform some exploratory data analysis on flight delay lengths for each of UA and AA flights.**
 
     ```{r}
+    data(FlightDelays)
+    ```
+
+    ```{r}
+    delay_AA<- FlightDelays$Delay[FlightDelays$Carrier == "AA"] 
+    delay_UA <- FlightDelays$Delay[FlightDelays$Carrier == "UA"] 
+    par(mfrow = c(1,2))
+    hist(delay_AA,main = "American Airlines Delay distribution")
+    hist(delay_UA,main = "United Airlines Delay distribution")
+
+    summary(delay_AA)
+    summary(delay_UA)
 
     ```
 
 b)  **Bootstrap the mean of flight delay lengths for each airline separately, and describe the distribution.**
 
     ```{r}
+    set.seed(123)
+    bootstrap_function <- function(data, airline_name){
+      result_boot <- numeric(2000)
+      for(i in 1:2000){
+        Airline_mean <- sample(data, size = length(data), replace = TRUE)
+        result_boot[i] <- mean(Airline_mean) 
+      }
+      hist(result_boot, main = paste("The bootstrap sample of", airline_name), xlab = "Mean Delay (minutes)")
+      abline(v = mean(result_boot), col = "red", lty = 1)
+      abline(v = mean(data), col = "blue", lty = 2)
+    }
+
+    bootstrap_function(delay_AA, "American Airline (AA)")
+    bootstrap_function(delay_UA, "United Airline (UA)")
 
     ```
+
+    Answer: We can see that both the bootstrap samples are normally distributed.
+    and the mean of the sapling distribution and the mean of the bootstrap sampling distribution are nearly same.
+    but comparing the histogram and spread of the data, we can see that our bootstrap sample is more effective and more reasonable to check our assumptions.
+    i.e If there is any difference in the mean ratio of the data.
 
 c)  **Bootstrap the ratio of means.Provide plots of the bootstrap distribution and describe the distribution.**
 
     ```{r}
+    set.seed(123)
+    mean_ratio <- mean(delay_UA) / mean(delay_AA)
+    mean_ratio
+    mean_ratio_boot <- function(data, index){
+      mean_UA <- data[index,]|> filter(Carrier == "UA")
+      mean_AA <- data[index,]|> filter(Carrier == "AA")
+      return(mean(mean_UA$Delay)/mean(mean_AA$Delay))
+    }
 
+    mean_ratio_result <- boot(data = FlightDelays,statistic = mean_ratio_boot, R = 2000)
+
+    hist(mean_ratio_result$t,main = "Boot strap mean ratio distribution(UA/AA)",
+         col = "lightblue", xlim = c(1.0, 2.25))
+    abline(v = mean(mean_ratio_result$t), col = "red", lty = 2)
     ```
 
 d)  **Find the 95% bootstrap percentile interval for the ratio of means. Interpret this interval.**
 
     ```{r}
-
+    set.seed(123)
+    boot.ci(mean_ratio_result, type = "basic")
     ```
+
+    **Answer:** The 95% bootstrap percentile interval for the ratio of means spans from 1.19 to 1.90.
+    Remarkably, our observed true mean ratio of 1.58 falls within this interval.
+    With such findings, we assert that in a statistical sense, 95% of the time when we repeat this analysis, the mean ratio will be encompassed within this confidence interval range.
 
 e)  **What is the bootstrap estimate of the bias? What fraction of the bootstrap standard error does it represent?**
 
     ```{r}
+    set.seed(123)
+    boot.bias <- mean(mean_ratio_result$t) - mean_ratio_result$t0
+    boot.bias
 
+    boot.se <- sd(mean_ratio_result$t)
+    boot.se
+
+    cat("The Bootstrap Estimate of the bias is nearly",round(boot.bias/boot.se,3),"or",round((boot.bias/boot.se)*100,3),"% of the boot strap standard error" )
     ```
 
 f)  **For inference in this text, we assume that the observations are independent. Is that condition met here? Explain.**
 
-    ```{r}
-
-    ```
+    Answer: We can see that there is no correlation between the points, and all the points are independent of each other.
+    and all the observations are randomly sampled, which ensures there is no bias in selecting these observations.
